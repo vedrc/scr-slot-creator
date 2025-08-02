@@ -1,14 +1,14 @@
 from datetime import datetime, timedelta, time
-from clickupython import client # type: ignore
+from clickupython import client
 import os
-from dotenv import load_dotenv, dotenv_values # type: ignore
-import requests
+from dotenv import load_dotenv, dotenv_values
+import aiohttp
+import asyncio
 import json
 
 # gets list of all tasks in dispatching dept space
 def get_tasks(c, status):
-    return c.get_tasks("901504204103", subtasks=False,
-        statuses=[status])
+    return c.get_tasks("901504204103", subtasks=False, statuses=[status])
 
 
 # converts title of task into a datetime obj
@@ -96,26 +96,39 @@ def editslot(timeslot, timeslot_boundary, trainings):
     return timeslot
 
 
-def createslot(c, start, end):
-    # creates task from template
+async def createslot(c, start, end):
     date = start.strftime("%d/%m/%Y")
     day = start.strftime("%A")
     starttime = start.strftime("%H:%M")
     endtime = end.strftime("%H:%M")
     taskname = f"{date} - {day} - [{starttime} - {endtime}] BST - Vacant"
-    response = requests.post("https://api.clickup.com/api/v2/list/901504204103/taskTemplate/t-86c4v0yj5", json={ "name": taskname }, headers={ "accept": "application/json", "content-type": "application/json", "Authorization": API_KEY})
     
-    # adds tags to template
-    data = json.loads(response.text)
-    taskid = data["id"]
-    requests.post(f"https://api.clickup.com/api/v2/task/{taskid}/tag/training%20request", headers={"accept": "application/json", "Authorization": API_KEY})
-    requests.post(f"https://api.clickup.com/api/v2/task/{taskid}/tag/needs%20host", headers={"accept": "application/json", "Authorization": API_KEY})
+    async with aiohttp.ClientSession() as session:
+        # Create task from template
+        async with session.post("https://api.clickup.com/api/v2/list/901504204103/taskTemplate/t-86c4v0yj5", 
+                                json={ "name": taskname },
+                                headers={ "accept": "application/json", "content-type": "application/json", "Authorization": API_KEY }) as response:
+            data = await response.json()  # Parse the JSON response asynchronously
+            taskid = data["id"]
+        
+        # Add tags to the task asynchronously
+        tag_url_1 = f"https://api.clickup.com/api/v2/task/{taskid}/tag/training%20request"
+        tag_url_2 = f"https://api.clickup.com/api/v2/task/{taskid}/tag/needs%20host"
+        
+        tag_tasks = [
+            session.post(tag_url_1, headers={"accept": "application/json", "Authorization": API_KEY}),
+            session.post(tag_url_2, headers={"accept": "application/json", "Authorization": API_KEY})
+        ]
+        await asyncio.gather(*tag_tasks)  # Wait for both tag requests to complete
 
+    # Return the formatted string
+    return f"**{date} {starttime} - {endtime} BST**"
 
-def main():
+def init():
     # auth
     load_dotenv()
     global API_KEY
+    global c
     API_KEY = os.getenv("API_KEY")
     c = client.ClickUpClient(API_KEY)
 
@@ -123,22 +136,26 @@ def main():
 
     unfiltered_date_list = []
     for task in all_tasks:
-        if "Requests made for" in task.name:
+        if task.id == "86byavaeg":
             startdate, enddate = task.name.split("for ")[1].split(" will")[0].split(" - ") # grabs dates from timeframe message, formats, and assigns to list
         else:
             get_time(unfiltered_date_list, task)
     
+    return startdate, enddate, unfiltered_date_list
+
+async def process(startdate, enddate,unfiltered_date_list):
     startdate = datetime.strptime(startdate, "%d/%m/%y")
     enddate = datetime.combine(datetime.strptime(enddate, "%d/%m/%y"), time(23, 59))
     date_list = filter_tasks(startdate, enddate, unfiltered_date_list)
-    date_list_boundary = filter_tasks(startdate - timedelta(hours=2, minutes=30), enddate + timedelta(hours=2, minutes=30), unfiltered_date_list) # getting tasks in the boundary for slot card adjustment calcs
 
     emptyslot_list = []
     for day in get_dates_between(startdate, enddate):
         emptyslot_list.append(emptyslots(day, date_list))
     
+    created_slots = []
     for day in emptyslot_list:
         for timeslot in day:
-            createslot(c, timeslot[0], timeslot[1])
+            created_slots.append(await createslot(c, timeslot[0], timeslot[1]))
 
-main()
+    return created_slots
+    

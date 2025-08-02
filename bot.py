@@ -12,6 +12,7 @@ intents.message_content = True
 client = commands.Bot(command_prefix="!", intents=intents)
 
 client.synced_once = False
+client.commands_ready = False
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
@@ -89,6 +90,9 @@ class SlotCardView(discord.ui.View):
 
 @client.tree.command(name="createslots", description="Creates slot cards for the designated scheduling window.", guild=discord.Object(id=691812653915439145))
 async def createslots(interaction: discord.Interaction):
+    if not client.commands_ready:
+        await interaction.response.send_message("Bot is still starting up. Please try again in a few seconds.", ephemeral=True)
+        return
     start, end, lst = p.init()
     view = SlotCardView(start, end, lst)
     await interaction.response.send_message(
@@ -102,13 +106,14 @@ async def createslots(interaction: discord.Interaction):
     )
 
 @client.event
-
 async def on_ready():
-    if not getattr(client, 'synced_once', False):
+    if not client.synced_once:
+        await asyncio.sleep(3)
         try:
             await client.tree.sync(guild=discord.Object(id=691812653915439145))
             print("Synced commands.")
             client.synced_once = True
+            client.commands_ready = True
         except Exception as e:
             print(f"Sync error: {e}")
 

@@ -101,9 +101,13 @@ async def createslots(interaction: discord.Interaction):
     )
 
 @client.event
+
 async def on_ready():
-    await tree.sync(guild=discord.Object(id=691812653915439145))
-    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="the ClickUp"))
-    print("Ready!")
+    try:
+        synced = await tree.sync(guild=discord.Object(id=691812653915439145))
+        print(f"Synced {len(synced)} command(s) to test guild.")
+    except Exception as e:
+        print(f"Sync error: {e}")
 
 client.run(DISCORD_TOKEN)
+

@@ -9,8 +9,7 @@ from dotenv import load_dotenv
 
 intents = discord.Intents.default()
 intents.message_content = True
-client = discord.Client(intents=intents)
-tree = app_commands.CommandTree(client)
+client = commands.Bot(command_prefix="!", intents=intents)
 
 client.synced_once = False
 
@@ -88,7 +87,7 @@ class SlotCardView(discord.ui.View):
         except asyncio.TimeoutError:
             await self.update_message(msg, "Cancelled", "You did not respond in time. Please rerun the command.", 0xB31B1B)
 
-@tree.command(name="createslots", description="Creates slot cards for the designated scheduling window.", guild=discord.Object(id=691812653915439145))
+@client.tree.command(name="createslots", description="Creates slot cards for the designated scheduling window.", guild=discord.Object(id=691812653915439145))
 async def createslots(interaction: discord.Interaction):
     start, end, lst = p.init()
     view = SlotCardView(start, end, lst)
@@ -105,11 +104,10 @@ async def createslots(interaction: discord.Interaction):
 @client.event
 
 async def on_ready():
-    if not client.synced_once:
-        await asyncio.sleep(2)
+    if not getattr(client, 'synced_once', False):
         try:
-            synced = await tree.sync(guild=discord.Object(id=691812653915439145))
-            print(f"Synced {len(synced)} command(s) to test guild.")
+            await client.tree.sync(guild=discord.Object(id=691812653915439145))
+            print("Synced commands.")
             client.synced_once = True
         except Exception as e:
             print(f"Sync error: {e}")

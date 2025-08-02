@@ -12,6 +12,8 @@ intents.message_content = True
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
+client.synced_once = False
+
 load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -103,11 +105,14 @@ async def createslots(interaction: discord.Interaction):
 @client.event
 
 async def on_ready():
-    try:
-        synced = await tree.sync(guild=discord.Object(id=691812653915439145))
-        print(f"Synced {len(synced)} command(s) to test guild.")
-    except Exception as e:
-        print(f"Sync error: {e}")
+    if not client.synced_once:
+        await asyncio.sleep(2)
+        try:
+            synced = await tree.sync(guild=discord.Object(id=691812653915439145))
+            print(f"Synced {len(synced)} command(s) to test guild.")
+            client.synced_once = True
+        except Exception as e:
+            print(f"Sync error: {e}")
 
 client.run(DISCORD_TOKEN)
 

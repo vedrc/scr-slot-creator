@@ -116,6 +116,7 @@ async def on_ready():
             print("Synced commands.")
             client.synced_once = True
             client.commands_ready = True
+            await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="the ClickUp"))
         except Exception as e:
             print(f"Sync error: {e}")
 

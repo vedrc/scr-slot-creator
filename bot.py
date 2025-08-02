@@ -90,20 +90,22 @@ class SlotCardView(discord.ui.View):
 
 @client.tree.command(name="createslots", description="Creates slot cards for the designated scheduling window.", guild=discord.Object(id=691812653915439145))
 async def createslots(interaction: discord.Interaction):
-    if not client.commands_ready:
-        await interaction.response.send_message("Bot is still starting up. Please try again in a few seconds.", ephemeral=True)
-        return
-    start, end, lst = p.init()
-    view = SlotCardView(start, end, lst)
-    await interaction.response.send_message(
-        embed=discord.Embed(
-            title="Scheduling Window",
-            description=f"The bot will create slots between **{start}** - **{end}**. Is this correct?",
-            color=0xeb842d
-        ),
-        view=view,
-        ephemeral=True
-    )
+    try:
+        await interaction.response.defer(ephemeral=True)
+
+        while not client.commands_ready:
+            await asyncio.sleep(0.1)
+
+        start, end, lst = p.init()
+        view = SlotCardView(start, end, lst)
+        await interaction.edit_original_response(embed=discord.Embed(title="Scheduling Window", description=f"The bot will create slots between **{start}** - **{end}**. Is this correct?", color=0xeb842d), view=view)
+    
+    except Exception as e:
+        traceback.print_exc()
+        if not interaction.response.is_done():
+            await interaction.response.send_message("Something went wrong while processing the command.", ephemeral=True)
+        else:
+            await interaction.followup.send("Something went wrong after deferring the response.", ephemeral=True)       
 
 @client.event
 async def on_ready():

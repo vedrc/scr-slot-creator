@@ -107,6 +107,14 @@ async def createslots(interaction: discord.Interaction):
         else:
             await interaction.followup.send("Something went wrong after deferring the response.", ephemeral=True)       
 
+@client.tree.command(name="toggletimezone", description="Toggles between GMT and BST for slot card creation.", guild=discord.Object(id=691812653915439145))
+@app_commands.describe(timezone="Select which timezone to use.")
+@app_commands.choices(timezone=[app_commands.Choice(name="GMT", value="GMT"), app_commands.Choice(name="BST", value="BST")])
+async def toggletimezone(interaction: discord.Interaction, timezone: app_commands.Choice[str]):
+    p.changeTimezone(timezone.value)
+    await interaction.response.send_message(f"Timezone set to **{timezone.value}**.", ephemeral=True)
+
+
 @client.event
 async def on_ready():
     if not client.synced_once:

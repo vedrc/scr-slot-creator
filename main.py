@@ -6,6 +6,9 @@ import aiohttp
 import asyncio
 import json
 
+def changeTimezone(new_timezone):
+    os.environ['TIMEZONE'] = new_timezone
+
 # gets list of all tasks in dispatching dept space
 def get_tasks(c, status):
     return c.get_tasks("901504204103", subtasks=False, statuses=[status])
@@ -97,11 +100,12 @@ def editslot(timeslot, timeslot_boundary, trainings):
 
 
 async def createslot(c, start, end):
+    timezone = os.getenv("TIMEZONE")
     date = start.strftime("%d/%m/%Y")
     day = start.strftime("%A")
     starttime = start.strftime("%H:%M")
     endtime = end.strftime("%H:%M")
-    taskname = f"{date} - {day} - [{starttime} - {endtime}] BST - Vacant"
+    taskname = f"{date} - {day} - [{starttime} - {endtime}] {timezone} - Vacant"
     
     async with aiohttp.ClientSession() as session:
         # Create task from template
@@ -122,7 +126,7 @@ async def createslot(c, start, end):
         await asyncio.gather(*tag_tasks)  # Wait for both tag requests to complete
 
     # Return the formatted string
-    return f"**{date} {starttime} - {endtime} BST**"
+    return f"**{date} {starttime} - {endtime} {timezone}**"
 
 def init():
     # auth

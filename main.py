@@ -8,7 +8,6 @@ import json
 
 def changeTimezone(new_timezone):
     set_key(".env", "TIMEZONE", new_timezone)
-    os.environ['TIMEZONE'] = new_timezone
 
 # gets list of all tasks in dispatching dept space
 def get_tasks(c, status):

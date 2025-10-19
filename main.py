@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta, time
 from clickupython import client
 import os
-from dotenv import load_dotenv, dotenv_values
+from dotenv import load_dotenv, dotenv_values, set_key
 import aiohttp
 import asyncio
 import json
 
 def changeTimezone(new_timezone):
+    set_key(".env", "TIMEZONE", new_timezone)
     os.environ['TIMEZONE'] = new_timezone
 
 # gets list of all tasks in dispatching dept space

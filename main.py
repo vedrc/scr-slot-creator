@@ -7,7 +7,7 @@ import asyncio
 import json
 
 def changeTimezone(new_timezone):
-    set_key(".env", "TIMEZONE", new_timezone)
+    set_key(".env", "TIMEZONE", new_timezone, quote_mode="never")
 
 # gets list of all tasks in dispatching dept space
 def get_tasks(c, status):

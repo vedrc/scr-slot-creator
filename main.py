@@ -161,6 +161,7 @@ async def process(startdate, enddate,unfiltered_date_list):
     for day in emptyslot_list:
         for timeslot in day:
             created_slots.append(await createslot(c, timeslot[0], timeslot[1]))
+            await asyncio.sleep(0.6)
 
     return created_slots
     
